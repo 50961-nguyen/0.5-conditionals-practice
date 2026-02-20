@@ -1,6 +1,6 @@
 import re
 import sys
-import pytest
+import builtins
 
 
 def test_header_comments():
@@ -35,23 +35,27 @@ def test_header_comments():
     assert len(description_lines) >= 1, "Your header must include a short description of the program"
 
 
-@pytest.mark.parametrize(
-    "a,b,c",
-    [
+def test_orderings(capsys):
+    """No matter what order, student should output sorted numbers"""
+    all_cases = [
         ("1", "5", "10"),
         ("1", "10", "5"),
         ("5", "1", "10"),
         ("5", "10", "1"),
         ("10", "1", "5"),
         ("10", "5", "1"),
-    ],
-)
-def test_orderings(a, b, c, capsys, monkeypatch):
-    """No matter what order, student should output sorted numbers"""
-    inputs = [c, b, a]
-    monkeypatch.setattr("builtins.input", lambda _: inputs.pop())
-    __import__("cond_practice")
-    captured = capsys.readouterr()
+    ]
 
-    assert "1 5 10" in captured.out
-    del sys.modules["cond_practice"]
+    for (a, b, c) in all_cases:
+        sys.modules.pop("cond_practice", None)
+        inputs = [c, b, a]
+        original_input = builtins.input
+        builtins.input = lambda _: inputs.pop()
+
+        try:
+            __import__("cond_practice")
+            captured = capsys.readouterr()
+            assert "1 5 10" in captured.out, f"Expected '1 5 10' in output for inputs {a}, {b}, {c}"
+        finally:
+            builtins.input = original_input
+            sys.modules.pop("cond_practice", None)
